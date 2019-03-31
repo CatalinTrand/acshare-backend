@@ -22,12 +22,13 @@ class UserController extends Controller
     }
 
     public function login(Request $request){
+
         $user = User::where('email',$request->email)->get()->first();
 
         if(Hash::check($request->password,$user->password)) {
             $user->remember_token = Str::random(20);
             $user->save();
-            return response()->json(['message' => $user->remember_token], 200);
+            return response()->json(['id' => $user->id, 'token' => $user->remember_token], 200);
         } else
             return response()->json(['message' => 'Invalid credidentials.'], 500);
     }

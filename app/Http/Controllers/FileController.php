@@ -8,34 +8,44 @@ use Illuminate\Support\Facades\Storage;
 
 class FileController extends Controller
 {
-    public function index(Request $request){
-        $myFiles = File::where('owner_id',$request->id)->get();
-        $sharedWithMe = File::where('shared_with', 'LIKE', '%'.$request->email.'%')->get();
+    public function index(Request $request)
+    {
+        $myFiles = File::where('owner_id', $request->id)->get();
+        $sharedWithMe = File::where('shared_with', 'LIKE', '%' . $request->email . '%')->get();
 
         $fileData = new \stdClass();
         $fileData->myFiles = $myFiles;
         $fileData->sharedWithMe = $sharedWithMe;
 
-        return response()->json(['fileData',$fileData],200);
+        return response()->json($fileData, 200);
+    }
+
+    public function arrContains($file, $list){
+        foreach ($list as $item)
+            if ($item->id == $file->id)
+                return true;
+
+        return false;
     }
 
     public function download(Request $request){
         $file = File::find($request->file_id);
 
-        if($file == null)
-            return response()->json(['message','No such file with id.'],500);
+        if ($file == null)
+            return response()->json(['message', 'No such file with id.'], 500);
 
-        $myFiles = File::where('owner_id',$request->id)->get();
-        if(!in_array($file,$myFiles)) {
+        $myFiles = File::where('owner_id', $request->id)->get();
+
+        if (!FileController::arrContains($file, $myFiles)) {
             $sharedWithMe = File::where('shared_with', 'LIKE', '%' . $request->email . '%')->get();
-            if(!in_array($file,$sharedWithMe))
-                return response()->json(['message','No permission to view this file.'],500);
+            if (!FileController::arrContains($file, $sharedWithMe))
+                return response()->json(['message', 'No permission to view this file.'], 500);
         }
 
-        $fileData = Storage::download($file->path);
+        $fileData = Storage::get($file->path);
 
-        if($fileData == null)
-            return response()->json(['message','Error downloading file.'],500);
+        if ($fileData == null)
+            return response()->json(['message', 'Error downloading file.'], 500);
 
         return $fileData;
     }
@@ -49,12 +59,14 @@ class FileController extends Controller
         $file->path = "";
 
         if ($file->save()) {
-            $id = File::where('name',$file->name)->where('owner_id',$file->owner_id)->get()->first();
-            $file->path = $request->file("fileData")->store('storage/uploads');
-            if(strcmp($file->path,"") && $file->save())
+            $arr = explode('.', $request->file("fileData")->getClientOriginalName());
+            $extension = $arr[count($arr) - 1];
+            $file->path = '/uploads/' . $file->name . "." . $extension;
+            Storage::put($file->path, $request->file("fileData"));
+            if ($file->save())
                 return response()->json(['message' => 'File created successfully'], 201);
             else {
-                File::destroy($id);
+                File::destroy($file->id);
                 return response()->json(['message' => 'There was an error storing the data.'], 500);
             }
         } else
@@ -64,7 +76,7 @@ class FileController extends Controller
     public function delete(Request $request)
     {
         $id = $request->file_id;
-        if(File::destroy($id))
+        if (File::destroy($id))
             return response()->json(['message' => 'File deleted successfully.'], 200);
         else
             return response()->json(['message' => 'There was an error deleting the file.'], 500);
@@ -77,7 +89,7 @@ class FileController extends Controller
         $file->name = $request->name;
         $file->shared_with = $request->shared_with;
 
-        if($file->save())
+        if ($file->save())
             return response()->json(['message' => 'File updated successfully.'], 200);
         else
             return response()->json(['message' => 'There was an error updating the file.'], 500);

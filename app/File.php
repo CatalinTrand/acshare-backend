@@ -9,14 +9,16 @@
 namespace App;
 
 
-class File
+use Illuminate\Database\Eloquent\Model;
+
+class File extends Model
 {
     protected $table = 'files';
 
     protected $fillable = [
         "name",
         "owner_id" ,
-        "shared_with"
+        "shared_with",
     ];
 
     protected $hidden = [

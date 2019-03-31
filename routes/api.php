@@ -13,13 +13,13 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::get('/register', 'UserController@store');
-Route::get('/login', 'UserController@login');
+Route::post('/register', 'UserController@store');
+Route::post('/login', 'UserController@login');
 
 Route::middleware(['CheckAuth'])->group(function () {
-    Route::get('/files', 'FilesController@index');
-    Route::get('/files/download', 'FilesController@download');
-    Route::get('/files/upload', 'FilesController@store');
-    Route::get('/files/delete', 'FilesController@delete');
-    Route::get('/files/update', 'FilesController@update');
+    Route::get('/files', 'FileController@index');
+    Route::get('/files/download', 'FileController@download');
+    Route::post('/files/upload', 'FileController@store');
+    Route::delete('/files/delete', 'FileController@delete');
+    Route::put('/files/update', 'FileController@update');
 });
